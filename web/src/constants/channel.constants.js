@@ -119,5 +119,10 @@ export const CHANNEL_OPTIONS = [
     value: 48,
     color: 'blue',
     label: 'xAI'
+  },
+  {
+    value: 49,
+    color: 'teal',
+    label: 'Maxkb'
   }
 ];

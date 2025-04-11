@@ -29,6 +29,7 @@ import (
 	"one-api/relay/channel/xunfei"
 	"one-api/relay/channel/zhipu"
 	"one-api/relay/channel/zhipu_4v"
+	"one-api/relay/channel/maxkb"
 	"one-api/relay/constant"
 )
 
@@ -36,6 +37,8 @@ func GetAdaptor(apiType int) channel.Adaptor {
 	switch apiType {
 	case constant.APITypeAli:
 		return &ali.Adaptor{}
+	case constant.APITypeMaxkb:
+		return &maxkb.Adaptor{}
 	case constant.APITypeAnthropic:
 		return &claude.Adaptor{}
 	case constant.APITypeBaidu:
