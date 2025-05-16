@@ -34,7 +34,7 @@ var indexPage []byte
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
-		common.SysLog("Support for .env file is disabled")
+		common.SysLog("Support for .env file is disabled: " + err.Error())
 	}
 
 	common.LoadEnv()
@@ -74,11 +74,13 @@ func main() {
 	}
 
 	// Initialize model settings
-	operation_setting.InitModelSettings()
+	operation_setting.InitRatioSettings()
 	// Initialize constants
 	constant.InitEnv()
 	// Initialize options
 	model.InitOptionMap()
+
+	service.InitTokenEncoders()
 
 	if common.RedisEnabled {
 		// for compatibility with old versions
@@ -132,8 +134,6 @@ func main() {
 		go common.Monitor()
 		common.SysLog("pprof enabled")
 	}
-
-	service.InitTokenEncoders()
 
 	// Initialize HTTP server
 	server := gin.New()
