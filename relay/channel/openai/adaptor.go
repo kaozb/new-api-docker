@@ -106,14 +106,30 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		url = strings.Replace(url, "{model}", info.UpstreamModelName, -1)
 		return url, nil
 	default:
-		return relaycommon.GetFullRequestURL(info.BaseUrl, info.RequestURLPath, info.ChannelType), nil
+		return relaycommon.GetFullRequestURL(info.BaseUrl, info.RequestURLPath, info.ChannelType, info), nil
 	}
 }
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, header *http.Header, info *relaycommon.RelayInfo) error {
 	channel.SetupApiRequestHeader(info, c, header)
+	apiKey := info.ApiKey
+	if maxkbConfig, ok := info.ChannelSetting["maxkbConfig"]; ok {
+		if configMap, ok := maxkbConfig.(map[string]interface{}); ok {
+			// 根据 info.UpstreamModelName 查找对应的配置
+			if modelConfig, ok := configMap[info.UpstreamModelName]; ok {
+				if appKeyMap, ok := modelConfig.(map[string]interface{}); ok {
+					// 这里假设只取第一个 app:key 对
+					for _, key := range appKeyMap {
+						apiKey = key.(string)
+						break
+					}
+				}
+			}
+		}
+	}
+
 	if info.ChannelType == common.ChannelTypeAzure {
-		header.Set("api-key", info.ApiKey)
+		header.Set("api-key", apiKey)
 		return nil
 	}
 	if info.ChannelType == common.ChannelTypeOpenAI && "" != info.Organization {
@@ -124,7 +140,7 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, header *http.Header, info *
 		if swp != "" {
 			items := []string{
 				"realtime",
-				"openai-insecure-api-key." + info.ApiKey,
+				"openai-insecure-api-key." + apiKey,
 				"openai-beta.realtime-v1",
 			}
 			header.Set("Sec-WebSocket-Protocol", strings.Join(items, ","))
@@ -133,10 +149,10 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, header *http.Header, info *
 			//req.Header.Set("Sec-Websocket-Version", c.Request.Header.Get("Sec-Websocket-Version"))
 		} else {
 			header.Set("openai-beta", "realtime=v1")
-			header.Set("Authorization", "Bearer "+info.ApiKey)
+			header.Set("Authorization", "Bearer "+apiKey)
 		}
 	} else {
-		header.Set("Authorization", "Bearer "+info.ApiKey)
+		header.Set("Authorization", "Bearer "+apiKey)
 	}
 	if info.ChannelType == common.ChannelTypeOpenRouter {
 		header.Set("HTTP-Referer", "https://github.com/Calcium-Ion/new-api")

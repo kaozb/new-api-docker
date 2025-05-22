@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func GetFullRequestURL(baseURL string, requestURL string, channelType int) string {
+func GetFullRequestURL(baseURL string, requestURL string, channelType int, info ...*RelayInfo) string {
 	fullRequestURL := fmt.Sprintf("%s%s", baseURL, requestURL)
 
 	if strings.HasPrefix(baseURL, "https://gateway.ai.cloudflare.com") {
@@ -21,6 +21,25 @@ func GetFullRequestURL(baseURL string, requestURL string, channelType int) strin
 			fullRequestURL = fmt.Sprintf("%s%s", baseURL, strings.TrimPrefix(requestURL, "/openai/deployments"))
 		}
 	}
+
+	// 检查是否存在 maxkbConfig 配置
+	if len(info) > 0 && info[0] != nil {
+		if maxkbConfig, ok := info[0].ChannelSetting["maxkbConfig"]; ok {
+			if configMap, ok := maxkbConfig.(map[string]interface{}); ok {
+				// 根据 info.UpstreamModelName 查找对应的配置
+				if modelConfig, ok := configMap[info[0].UpstreamModelName]; ok {
+					if appKeyMap, ok := modelConfig.(map[string]interface{}); ok {
+						// 取第一个 app:key 对
+						for app, _ := range appKeyMap {
+							fullRequestURL = fmt.Sprintf("%s/api/application/%s/chat/completions", baseURL, app)
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return fullRequestURL
 }
 
